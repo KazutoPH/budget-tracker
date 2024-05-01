@@ -18,98 +18,135 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Currency, currencies } from "@/constants";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import SkeletonWrapper from "../skeleton/SkeletonWrapper";
+import { UserSettings } from "@prisma/client";
+import { UpdateUserCurrency } from "@/lib/actions/userSettings.action";
+import { toast } from "sonner";
 
-type Status = {
-  value: string;
-  label: string;
-};
-
-const statuses: Status[] = [
-  {
-    value: "backlog",
-    label: "Backlog",
-  },
-  {
-    value: "todo",
-    label: "Todo",
-  },
-  {
-    value: "in progress",
-    label: "In Progress",
-  },
-  {
-    value: "done",
-    label: "Done",
-  },
-  {
-    value: "canceled",
-    label: "Canceled",
-  },
-];
 
 export function CurrencyComboBox() {
   const [open, setOpen] = React.useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [selectedStatus, setSelectedStatus] = React.useState<Status | null>(
+  const [selectedOption, setSelectedOption] = React.useState<Currency | null>(
     null
   );
 
+  // fetch user settings using tanstackquery
+  const userSettings = useQuery<UserSettings>({
+    queryKey: ["userSettings"],
+    queryFn: () => fetch('/api/user-settings').then((res) => res.json())
+  })
+
+  React.useEffect(() => {
+    if (!userSettings.data) return
+
+    // get all data of the currency base on usersettings
+    const userCurrency = currencies.find((currency) => userSettings.data.currency === currency.value);
+
+    // set the selected currency from user settings
+    if (userCurrency) setSelectedOption(userCurrency)
+  }, [userSettings.data])
+
+  // update userSettings on the database
+  const mutation = useMutation({
+    mutationFn: UpdateUserCurrency,
+    // on mutation success
+    onSuccess: (data: UserSettings) => {
+      toast.success(`Currency updated successuflly 🎉`, {
+        id: "update-currency",
+        duration: 2000,
+      });
+
+      setSelectedOption(
+        currencies.find((c) => c.value === data.currency) || null
+      );
+    },
+
+    // on mutation error
+    onError: (e) => {
+      console.error(e);
+      toast.error("Something went wrong", {
+        id: "update-currency",
+        duration: 2000,
+      });
+    },
+  });
+
+  // selection option function and update usersettings on change
+  const selectOption = React.useCallback((currency: Currency | null) => {
+
+    // diplays toast 
+    if (!currency) {
+      toast.error("Please select a currency")
+      return
+    }
+
+    // diplays toast 
+    toast.loading("Updating currency...", { id: "update-currency" })
+
+    mutation.mutate(currency.value)
+  }, [mutation])
+
   if (isDesktop) {
     return (
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="w-[150px] justify-start">
-            {selectedStatus ? <>{selectedStatus.label}</> : <>+ Set status</>}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-0" align="start">
-          <StatusList setOpen={setOpen} setSelectedStatus={setSelectedStatus} />
-        </PopoverContent>
-      </Popover>
+      <SkeletonWrapper isloading={userSettings.isFetching}>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-full justify-start" disabled={mutation.isPending}>
+              {selectedOption ? <>{selectedOption.label}</> : <>Set currency</>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0" align="start">
+            <OptionList setOpen={setOpen} setSelectedOption={selectOption} />
+          </PopoverContent>
+        </Popover>
+      </SkeletonWrapper>
     );
   }
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="outline" className="w-[150px] justify-start">
-          {selectedStatus ? <>{selectedStatus.label}</> : <>+ Set status</>}
+        <Button variant="outline" className="w-full justify-start" disabled={mutation.isPending}>
+          {selectedOption ? <>{selectedOption.label}</> : <>Set currency</>}
         </Button>
       </DrawerTrigger>
       <DrawerContent>
         <div className="mt-4 border-t">
-          <StatusList setOpen={setOpen} setSelectedStatus={setSelectedStatus} />
+          <OptionList setOpen={setOpen} setSelectedOption={selectOption} />
         </div>
       </DrawerContent>
     </Drawer>
   );
 }
 
-function StatusList({
+function OptionList({
   setOpen,
-  setSelectedStatus,
+  setSelectedOption,
 }: {
   setOpen: (open: boolean) => void;
-  setSelectedStatus: (status: Status | null) => void;
+  setSelectedOption: (status: Currency | null) => void;
 }) {
   return (
     <Command>
-      <CommandInput placeholder="Filter status..." />
+      <CommandInput placeholder="Filter currency..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup>
-          {statuses.map((status) => (
+          {currencies.map((currency: Currency) => (
             <CommandItem
-              key={status.value}
-              value={status.value}
+              key={currency.value}
+              value={currency.value}
               onSelect={(value) => {
-                setSelectedStatus(
-                  statuses.find((priority) => priority.value === value) || null
+                setSelectedOption(
+                  currencies.find((priority) => priority.value === value) || null
                 );
                 setOpen(false);
               }}
             >
-              {status.label}
+              {currency.label}
             </CommandItem>
           ))}
         </CommandGroup>
