@@ -1,3 +1,5 @@
+import History from "@/components/dashboard/History";
+import Overview from "@/components/dashboard/Overview";
 import CreateTransactionModal from "@/components/modal/CreateTransactionModal";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
@@ -53,6 +55,10 @@ async function page() {
           </div>
         </div>
       </div>
+
+      {/* Dashboard Component */}
+      <Overview userSettings={userSettings} />
+      <History userSettings={userSettings} />
     </div>
   );
 }

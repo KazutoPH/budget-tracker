@@ -11,17 +11,15 @@ import { useForm } from "react-hook-form";
 import { Button } from "../ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
 import { CircleOff, Loader2, PlusSquare } from "lucide-react";
-import {
-  DialogClose,
-  DialogDescription,
-  DialogTitle,
-} from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
 import {
   Form,
@@ -32,8 +30,7 @@ import {
   FormLabel,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { Popover } from "../ui/popover";
-import { PopoverContent, PopoverTrigger } from "@radix-ui/react-popover";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import {
@@ -44,12 +41,14 @@ import {
 import { CreateCategory } from "@/lib/actions/categoeis.action";
 import { toast } from "sonner";
 import { Category } from "@prisma/client";
+import { useTheme } from "next-themes";
 
 interface CreateCategoryModalProps {
   type: TransactionType;
+  onSuccessCallback: (Category: Category) => void
 }
 
-function CreateCategoryModal({ type }: CreateCategoryModalProps) {
+function CreateCategoryModal({ type, onSuccessCallback }: CreateCategoryModalProps) {
   const [open, setOpen] = useState(false);
 
   // create categoryform
@@ -61,6 +60,7 @@ function CreateCategoryModal({ type }: CreateCategoryModalProps) {
   });
 
   const queryClient = useQueryClient();
+  const theme = useTheme(); //theme selection
 
   // mutate changes to database CreateCategory action
   const { mutate, isPending } = useMutation({
@@ -74,8 +74,10 @@ function CreateCategoryModal({ type }: CreateCategoryModalProps) {
         type,
       });
       toast.success(`Category ${data.name} created successfully`, {
-        id: "create-category",
+        id: "create-category", duration: 2000
       });
+
+      onSuccessCallback(data)
 
       await queryClient.invalidateQueries({
         queryKey: ["categories"],
@@ -87,7 +89,7 @@ function CreateCategoryModal({ type }: CreateCategoryModalProps) {
     // mutation failed
     onError: () => {
       toast.error("Something went wrong", {
-        id: "create-category",
+        id: "create-category", duration: 2000
       });
     },
   });
@@ -95,10 +97,9 @@ function CreateCategoryModal({ type }: CreateCategoryModalProps) {
   // submit form function
   const onSubmit = useCallback(
     (values: CreateCategoryScemaType) => {
-      toast.loading("Creating Category"),
-        {
-          id: "create-category",
-        };
+      toast.loading("Creating category", {
+        id: "create-category",
+      });
       mutate(values);
     },
     [mutate]
@@ -122,7 +123,7 @@ function CreateCategoryModal({ type }: CreateCategoryModalProps) {
             <span
               className={
                 (cn("mr-1"),
-                type === "income" ? "text-emerald-500" : "text-red-500")
+                  type === "income" ? "text-emerald-500" : "text-red-500")
               }
             >
               {type}
@@ -144,10 +145,10 @@ function CreateCategoryModal({ type }: CreateCategoryModalProps) {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input defaultValue="" {...field} />
+                    <Input placeholder="Category" {...field} />
                   </FormControl>
                   <FormDescription>
-                    Transaction desciption (optional)
+                    This is how your catergoy will appear in the app
                   </FormDescription>
                 </FormItem>
               )}
@@ -189,6 +190,7 @@ function CreateCategoryModal({ type }: CreateCategoryModalProps) {
                         {/* emoji picker package */}
                         <Picker
                           data={data}
+                          theme={theme.resolvedTheme}
                           onEmojiSelect={(emoji: { native: string }) => {
                             field.onChange(emoji.native);
                           }}

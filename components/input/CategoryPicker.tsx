@@ -3,20 +3,27 @@
 import { TransactionType } from "@/types/types";
 import { Category } from "@prisma/client";
 import { useQuery } from "@tanstack/react-query";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
-import { Command, CommandInput, CommandList } from "../ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../ui/command";
 import CreateCategoryModal from "../modal/CreateCategoryModal";
-import { CommandEmpty, CommandGroup, CommandItem } from "cmdk";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 interface CategoryPickerProps {
   type: TransactionType;
+  onChange: (value: string) => void
 }
 
-function CategoryPicker({ type }: CategoryPickerProps) {
+function CategoryPicker({ type, onChange }: CategoryPickerProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
+
+  // update value on transaction modal form whenever value changes
+  useEffect(() => {
+    if (!value) return;
+    onChange(value) //when the value changes, call the onChange callback
+  }, [onChange, value])
 
   // get categories from database
   const categoriesQuery = useQuery({
@@ -25,9 +32,17 @@ function CategoryPicker({ type }: CategoryPickerProps) {
       fetch(`/api/categories?type=${type}`).then((res) => res.json()),
   });
 
+  // select category function
   const selectedCategory = categoriesQuery.data?.find(
     (category: Category) => category.name === value
   );
+
+  // on categoryselect change current value
+  const successCallback = useCallback((category: Category) => {
+    setValue(category.name)
+    setOpen(prev => !prev)
+  }, [setValue, setOpen])
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -35,13 +50,15 @@ function CategoryPicker({ type }: CategoryPickerProps) {
           variant={"outline"}
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className="w-full justify-between"
         >
           {selectedCategory ? (
             <CategoryRow category={selectedCategory} />
           ) : (
             "Select Category"
           )}
+
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
 
@@ -54,8 +71,11 @@ function CategoryPicker({ type }: CategoryPickerProps) {
           <CommandInput placeholder="Search category..." />
 
           {/* Custom Category Modal component */}
-          <CreateCategoryModal type={type} />
-          <CommandEmpty className="flex flex-col items-center py-2">
+          <CreateCategoryModal
+            type={type}
+            onSuccessCallback={successCallback}
+          />
+          <CommandEmpty className="flex flex-col items-center">
             <p>Category not found</p>
             <p className="text-xs text-muted-foreground">
               Tip: Create new category
@@ -67,14 +87,17 @@ function CategoryPicker({ type }: CategoryPickerProps) {
               {categoriesQuery.data &&
                 categoriesQuery.data.map((category: Category) => (
                   <CommandItem
-                    className="px-3 py-2 cursor-pointer"
+                    className="cursor-pointer flex items-center"
                     key={category.name}
-                    onSelect={(currentValue) => {
-                      setValue(currentValue);
+                    onSelect={() => {
+                      setValue(category.name);
                       setOpen((prev) => !prev);
                     }}
                   >
                     <CategoryRow category={category} />
+                    {value === category.name && (
+                      <Check className="ml-2 w-4 h-4" />
+                    )}
                   </CommandItem>
                 ))}
             </CommandList>
@@ -88,7 +111,7 @@ function CategoryPicker({ type }: CategoryPickerProps) {
 function CategoryRow({ category }: { category: Category }) {
   return (
     <div className="flex items-center gap-2">
-      <span role="img">{category.icon}</span>
+      <span role="img" className="w-[20px]">{category.icon}</span>
       <span>{category.name}</span>
     </div>
   );
