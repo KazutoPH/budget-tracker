@@ -6,7 +6,7 @@ import {
 } from "@/schema/categories";
 import { TransactionType } from "@/types/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import React, { useCallback, useState } from "react";
+import React, { ReactNode, useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "../ui/button";
 import {
@@ -38,17 +38,22 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { CreateCategory } from "@/lib/actions/categoeis.action";
+import { CreateCategory } from "@/lib/actions/categories.action";
 import { toast } from "sonner";
 import { Category } from "@prisma/client";
 import { useTheme } from "next-themes";
 
 interface CreateCategoryModalProps {
   type: TransactionType;
-  onSuccessCallback: (Category: Category) => void
+  onSuccessCallback: (Category: Category) => void;
+  trigger?: ReactNode;
 }
 
-function CreateCategoryModal({ type, onSuccessCallback }: CreateCategoryModalProps) {
+function CreateCategoryModal({
+  type,
+  onSuccessCallback,
+  trigger,
+}: CreateCategoryModalProps) {
   const [open, setOpen] = useState(false);
 
   // create categoryform
@@ -74,10 +79,11 @@ function CreateCategoryModal({ type, onSuccessCallback }: CreateCategoryModalPro
         type,
       });
       toast.success(`Category ${data.name} created successfully`, {
-        id: "create-category", duration: 2000
+        id: "create-category",
+        duration: 2000,
       });
 
-      onSuccessCallback(data)
+      onSuccessCallback(data);
 
       await queryClient.invalidateQueries({
         queryKey: ["categories"],
@@ -89,7 +95,8 @@ function CreateCategoryModal({ type, onSuccessCallback }: CreateCategoryModalPro
     // mutation failed
     onError: () => {
       toast.error("Something went wrong", {
-        id: "create-category", duration: 2000
+        id: "create-category",
+        duration: 2000,
       });
     },
   });
@@ -108,13 +115,18 @@ function CreateCategoryModal({ type, onSuccessCallback }: CreateCategoryModalPro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant={"ghost"}
-          className="flex border-separate items-center justify-start rounded-none border-b px-3 py-3 text-muted-foreground"
-        >
-          <PlusSquare className=" h-4 w-4 mr-2" />
-          Create New
-        </Button>
+        {/* if custom trigger is defined render custom trigger else render default button trigger */}
+        {trigger ? (
+          trigger
+        ) : (
+          <Button
+            variant={"ghost"}
+            className="flex border-separate items-center justify-start rounded-none border-b px-3 py-3 text-muted-foreground"
+          >
+            <PlusSquare className=" h-4 w-4 mr-2" />
+            Create New
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -123,7 +135,7 @@ function CreateCategoryModal({ type, onSuccessCallback }: CreateCategoryModalPro
             <span
               className={
                 (cn("mr-1"),
-                  type === "income" ? "text-emerald-500" : "text-red-500")
+                type === "income" ? "text-emerald-500" : "text-red-500")
               }
             >
               {type}

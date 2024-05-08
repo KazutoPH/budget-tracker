@@ -4,6 +4,7 @@ import { UpdateUserCurrencySchema } from "@/schema/userSettings";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "../prisma";
+import { revalidatePath } from "next/cache";
 
 export async function UpdateUserCurrency(currency: string) {
   // validate if currency exist
@@ -30,6 +31,8 @@ export async function UpdateUserCurrency(currency: string) {
       currency,
     },
   });
+
+  revalidatePath("/");
 
   return userSettings;
 }

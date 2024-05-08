@@ -123,3 +123,57 @@ export async function CreateTransaction(form: CreateTransactionSchemeType) {
     }),
   ]);
 }
+
+// delete transaction function
+export async function DeleteTransaction(id: string) {
+  const user = await currentUser();
+
+  if (!user) {
+    redirect("sign-in");
+  }
+
+  // check if transaction exist
+  const transaction = await prisma.transaction.findUnique({
+    where: {
+      userId: user.id,
+      id,
+    },
+  });
+
+  if (!transaction) {
+    throw new Error("bad request");
+  }
+
+  await prisma.$transaction([
+    //Delete transaction from db
+    prisma.transaction.delete({
+      where: {
+        id,
+        userId: user.id,
+      },
+    }),
+    //Update month history
+    prisma.monthHistory.update({
+      where: {
+        day_month_year_userId: {
+          userId: user.id,
+          day: transaction.date.getUTCDate(),
+          month: transaction.date.getMonth(),
+          year: transaction.date.getUTCFullYear(),
+        },
+      },
+      data: {
+        ...(transaction.type === "expense" && {
+          expense: {
+            decrement: transaction.amount,
+          },
+        }),
+        ...(transaction.type === "income" && {
+          expense: {
+            decrement: transaction.amount,
+          },
+        }),
+      },
+    }),
+  ]);
+}
