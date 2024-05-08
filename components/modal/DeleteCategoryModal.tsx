@@ -56,8 +56,7 @@ function DeleteCategoryModal({ category, trigger }: DeleteCategoryModalProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your
-            category
+            This action cannot be undone. This will permanently delete your transaction
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

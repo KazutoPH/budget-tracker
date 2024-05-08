@@ -10,6 +10,7 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -148,7 +149,7 @@ function TransactionTable({ from, to }: TransactionTableProps) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   // get transaction history api
   const history = useQuery<GetTransactionHistoryResponseType>({
-    queryKey: ["transcations", "history", from, to],
+    queryKey: ["transactions", "history", from, to],
     queryFn: () =>
       fetch(
         `/api/transactions-history?from=${DateToUTCDate(
@@ -170,7 +171,7 @@ function TransactionTable({ from, to }: TransactionTableProps) {
     // set and onchange filter state
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    getSortedRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
@@ -259,9 +260,9 @@ function TransactionTable({ from, to }: TransactionTableProps) {
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                       </TableHead>
                     );
                   })}

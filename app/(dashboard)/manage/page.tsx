@@ -2,6 +2,7 @@
 
 import { CurrencyComboBox } from "@/components/input/CurrencyComboBox";
 import CreateCategoryModal from "@/components/modal/CreateCategoryModal";
+import DeleteCategoryModal from "@/components/modal/DeleteCategoryModal";
 import SkeletonWrapper from "@/components/skeleton/SkeletonWrapper";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,23 +13,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+
 import { cn } from "@/lib/utils";
 import { TransactionType } from "@/types/types";
-import { useQuery } from "@tanstack/react-query";
-import {
-  PlusSquareIcon,
-  TrashIcon,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
 import { Category } from "@prisma/client";
+import { useQuery } from "@tanstack/react-query";
+import { PlusSquare, TrashIcon, TrendingDown, TrendingUp } from "lucide-react";
 import React from "react";
-import { DeleteCategory } from "@/lib/actions/categories.action";
-import DeleteCategoryModal from "@/components/modal/DeleteCategoryModal";
 
 function page() {
   return (
     <>
+      {/* HEADER */}
       <div className="border-b bg-card">
         <div className="container flex flex-wrap items-center justify-between gap-6 py-8">
           <div>
@@ -39,6 +35,7 @@ function page() {
           </div>
         </div>
       </div>
+      {/* END HEDER */}
       <div className="container flex flex-col gap-4 p-4">
         <Card>
           <CardHeader>
@@ -58,20 +55,19 @@ function page() {
   );
 }
 
-// category list component
+export default page;
+
 function CategoryList({ type }: { type: TransactionType }) {
-  // get the list of categories base on type
-  const categoryiesQuery = useQuery({
+  const categoriesQuery = useQuery({
     queryKey: ["categories", type],
     queryFn: () =>
       fetch(`/api/categories?type=${type}`).then((res) => res.json()),
   });
 
-  const dataAvalable =
-    categoryiesQuery.data && categoryiesQuery.data.length > 0;
+  const dataAvailable = categoriesQuery.data && categoriesQuery.data.length > 0;
 
   return (
-    <SkeletonWrapper isloading={categoryiesQuery.isLoading}>
+    <SkeletonWrapper isloading={categoriesQuery.isLoading}>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
@@ -82,25 +78,27 @@ function CategoryList({ type }: { type: TransactionType }) {
                 <TrendingUp className="h-12 w-12 items-center rounded-lg bg-emerald-400/10 p-2 text-emerald-500" />
               )}
               <div>
-                {type === "income" ? "Income" : "Expenese"} categories
-                <div className="text-sm text-foreground">Sorted by name</div>
+                {type === "income" ? "Incomes" : "Expenses"} categories
+                <div className="text-sm text-muted-foreground">
+                  Sorted by name
+                </div>
               </div>
             </div>
+
             <CreateCategoryModal
               type={type}
-              onSuccessCallback={() => categoryiesQuery.refetch}
+              onSuccessCallback={() => categoriesQuery.refetch()}
               trigger={
                 <Button className="gap-2 text-sm">
-                  <PlusSquareIcon className="h-4 w-4" />
+                  <PlusSquare className="h-4 w-4" />
                   Create category
                 </Button>
               }
             />
           </CardTitle>
         </CardHeader>
-
         <Separator />
-        {!dataAvalable ? (
+        {!dataAvailable && (
           <div className="flex h-40 w-full flex-col items-center justify-center">
             <p>
               No
@@ -114,18 +112,16 @@ function CategoryList({ type }: { type: TransactionType }) {
               </span>
               categories yet
             </p>
+
             <p className="text-sm text-muted-foreground">
               Create one to get started
             </p>
           </div>
-        ) : (
+        )}
+        {dataAvailable && (
           <div className="grid grid-flow-row gap-2 p-2 sm:grid-flow-row sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {/* list of categories  */}
-            {categoryiesQuery.data.map((category: Category) => (
-              <CategoryCard
-                category={category}
-                key={category.name}
-              ></CategoryCard>
+            {categoriesQuery.data.map((category: Category) => (
+              <CategoryCard category={category} key={category.name} />
             ))}
           </div>
         )}
@@ -134,7 +130,6 @@ function CategoryList({ type }: { type: TransactionType }) {
   );
 }
 
-// Category Card Component
 function CategoryCard({ category }: { category: Category }) {
   return (
     <div className="flex border-separate flex-col justify-between rounded-md border shadow-md shadow-black/[0.1] dark:shadow-white/[0.1]">
@@ -151,7 +146,7 @@ function CategoryCard({ category }: { category: Category }) {
             className="flex w-full border-separate items-center gap-2 rounded-t-none text-muted-foreground hover:bg-red-500/20"
             variant={"secondary"}
           >
-            <TrashIcon className="h-4 -w-4" />
+            <TrashIcon className="h-4 w-4" />
             Remove
           </Button>
         }
@@ -159,5 +154,3 @@ function CategoryCard({ category }: { category: Category }) {
     </div>
   );
 }
-
-export default page;

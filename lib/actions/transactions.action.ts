@@ -175,5 +175,28 @@ export async function DeleteTransaction(id: string) {
         }),
       },
     }),
+
+    //Update year history
+    prisma.yearHistory.update({
+      where: {
+        month_year_userId: {
+          userId: user.id,
+          month: transaction.date.getMonth(),
+          year: transaction.date.getUTCFullYear(),
+        },
+      },
+      data: {
+        ...(transaction.type === "expense" && {
+          expense: {
+            decrement: transaction.amount,
+          },
+        }),
+        ...(transaction.type === "income" && {
+          expense: {
+            decrement: transaction.amount,
+          },
+        }),
+      },
+    }),
   ]);
 }
