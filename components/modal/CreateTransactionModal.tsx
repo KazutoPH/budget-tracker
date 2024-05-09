@@ -138,7 +138,7 @@ function CreateTransactionModal({ trigger, type }: CreateTransactionModalProps) 
               )}
             />
 
-            <div className='flex items-center justify-between gap-2'>
+            <div className='flex items-center flex-col sm:flex-row sm:justify-between gap-2'>
               {/* category field */}
               <FormField
                 control={form.control}
